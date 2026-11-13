@@ -1,36 +1,100 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MealPlanner
 
-## Getting Started
+MealPlanner is a full-stack recipe catalog and weekly meal-planning application. Authenticated users will be able to discover recipes by ingredient, manage their own recipes, and organize lunch and dinner plans for the week.
 
-First, run the development server:
+## Team members
+
+Replace the placeholders before submitting Week 03.
+
+- [ ] **Member 1:** `Erandy Ramirez`
+- [ ] **Member 2:** `Nestor Rivera`
+- [ ] **Member 3:** `Andrew Parry`
+- [ ] **Member 4:** `Karen Mahr`
+
+## Technology stack
+
+- Next.js with App Router
+- TypeScript
+- Tailwind CSS
+- Neon PostgreSQL
+- Neon serverless driver with parameterized SQL queries
+- Versioned SQL migrations (no ORM)
+- Clerk authentication
+- Vercel deployment
+
+## Local development
+
+### Prerequisites
+
+- Node.js and npm
+- A Neon PostgreSQL database connection string once database work begins
+
+### Setup
+
+```bash
+git clone https://github.com/karenmahr/mealplanner.git
+cd mealplanner
+npm install
+```
+
+Create a `.env.local` file when database work begins:
+
+```env
+DATABASE_URL="your-neon-postgresql-connection-string"
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY="your-clerk-publishable-key"
+CLERK_SECRET_KEY="your-clerk-secret-key"
+```
+
+Never commit `.env.local` or database credentials.
+
+### Run the application
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in a browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Planned MVP
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Authentication and protected user workspace
+- Recipe catalog and ingredient-based filtering
+- Recipe detail pages
+- Custom recipe create, read, update, and delete workflows
+- Weekly lunch and dinner planner
+- Responsive and accessible interface
 
-## Learn More
+Recipe feedback and ratings will be added after the core MVP is stable.
 
-To learn more about Next.js, take a look at the following resources:
+## Project conventions
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Application code lives in `src/`.
+- Database access runs only on the server.
+- Database queries use parameterized SQL through the Neon serverless driver.
+- SQL schema changes are stored as versioned migration files.
+- Secrets are stored in local or Vercel environment variables, never in Git.
+- Pull requests require teammate review before merging.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Project planning
 
-## Deploy on Vercel
+The Week 03 project specification and technical decisions are documented in [spec.md](./spec.md).
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Deployment
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The application will be deployed to Vercel. The Neon `DATABASE_URL` will be configured in Vercel project environment variables before deployment.
+
+## Current status
+
+The project is in its planning and architecture phase for Week 03. Implementation begins in Week 04.
+
+## Known issues
+
+- Clerk authentication has not yet been configured.
+- Database schema, migrations, and seed data have not yet been implemented.
+
+## Future improvements
+
+- Recipe ratings and feedback persistence
+- Saved/favorite recipes
+- Advanced recipe filtering
+- Meal recommendations and meal swapping

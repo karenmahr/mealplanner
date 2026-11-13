@@ -2,14 +2,14 @@
 
 **Feature Branch**: `001-mealplanner-catalog`  
 **Created**: 2026-11-04  
-**Status**: Draft
+**Status**: Updated after Week 03 planning meeting (2026-11-11)
 **Input**: User description: "Create a project specification for MealPlanner, a full-stack personal recipe catalog and weekly meal scheduling web application with authentication, recipe discovery, calendar scheduling, custom recipe management, and community feedback."
 
 ## User Scenarios & Testing _(mandatory)_
 
 ### User Story 1 - Authenticated Meal-Planning Workspace (Priority: P0)
 
-A user signs up or logs in through Clerk or Auth.js, remains signed in across visits, and opens a workspace containing only that user's saved plans and custom recipes.
+A user signs up or logs in through Clerk, remains signed in across visits, and opens a workspace containing only that user's saved plans and custom recipes.
 
 **Why this priority**: Authentication and ownership boundaries are required for all personalized catalog and calendar behavior.
 
@@ -105,7 +105,7 @@ A user reads ratings and feedback for published recipes and an authenticated use
 - A recipe is deleted while referenced by the planner.
 - Ingredient values contain duplicates or invalid input.
 - Search input exceeds expected limits.
-- MongoDB is unavailable.
+- The SQL database is unavailable.
 - Authentication expires during a mutation.
 - A user attempts to modify another user's data.
 - Duplicate or repeated mutations are submitted.
@@ -117,8 +117,8 @@ A user reads ratings and feedback for published recipes and an authenticated use
 
 ### Functional Requirements
 
-- **FR-001**: The system MUST authenticate users with Clerk or Auth.js and associate personalized data with the authenticated identity.
-- **FR-002**: The system MUST persist weekly schedules, custom recipes, and other required application data in MongoDB.
+- **FR-001**: The system MUST authenticate users with Clerk and associate personalized data with the authenticated identity.
+- **FR-002**: The system MUST persist weekly schedules, custom recipes, ingredients, feedback, and other required application data in a relational SQL database.
 - **FR-003**: The system MUST provide a reproducible pre-seeded recipe catalog.
 - **FR-004**: The catalog MUST support recipe discovery and multi-ingredient filtering.
 - **FR-005**: The system MUST provide lunch and dinner slots for Monday through Sunday.
@@ -141,7 +141,7 @@ A user reads ratings and feedback for published recipes and an authenticated use
 #### `GET /api/recipes`
 
 - Implemented as a Next.js Route Handler.
-- Retrieves recipe data from MongoDB.
+- Retrieves recipe data from the relational SQL database.
 - Accepts optional search and ingredient query parameters.
 - Validates incoming query parameters.
 - Returns JSON.
@@ -183,14 +183,77 @@ If implemented:
 
 ---
 
-### Key Entities
+### Data Model
 
-- **User**: Authenticated user identity associated with personal data.
-- **Recipe**: Seeded or user-created recipe.
-- **Ingredient**: Ingredient associated with a recipe.
-- **ScheduleWeek**: Weekly meal plan for one user.
-- **CalendarSlot / MealPlanEntry**: One day/meal assignment in the weekly planner.
-- **Review** _(Phase 2)_: User rating and feedback for a recipe.
+The application will use Neon PostgreSQL as its relational SQL database, deployed alongside the application on Vercel. Server-side application code will access the database with parameterized SQL through the Neon serverless driver; no ORM will be used.
+
+| Entity / table | Key fields |
+| --- | --- |
+| **Users** | `id`, `clerkUserId` (unique), `name`, `email` (unique), `createdAt` |
+| **Recipes** | `id`, `title`, `description`, `imageUrl`, `instructions`, `prepTimeMinutes`, `createdAt`, `userId` (nullable foreign key for seeded recipes) |
+| **Ingredients** | `id`, `name` (unique) |
+| **RecipeIngredients** | `recipeId` (foreign key), `ingredientId` (foreign key), `quantity`; composite primary key (`recipeId`, `ingredientId`) |
+| **Feedback** _(Phase 2)_ | `id`, `rating` (integer constrained to 1–5), `comment`, `userId` (foreign key), `recipeId` (foreign key), `createdAt`; unique (`userId`, `recipeId`) |
+| **ScheduleWeeks** | `id`, `userId` (foreign key), `weekStartDate`; unique (`userId`, `weekStartDate`) |
+| **MealPlanEntries** | `id`, `scheduleWeekId` (foreign key), `recipeId` (foreign key), `dayOfWeek`, `mealType`; unique (`scheduleWeekId`, `dayOfWeek`, `mealType`) |
+| **SavedRecipes** _(if implemented)_ | `userId` (foreign key), `recipeId` (foreign key); composite primary key (`userId`, `recipeId`) |
+
+**Relationships**
+
+- One **User** has many **Recipes**, **Feedback** records, and **ScheduleWeeks**.
+- One **Recipe** has many **Feedback** records and **MealPlanEntries**.
+- **Recipes** and **Ingredients** are many-to-many through **RecipeIngredients**.
+- **Users** and saved **Recipes** are many-to-many through **SavedRecipes**; recipe IDs are not stored as an array on the user record.
+- One **ScheduleWeek** has many **MealPlanEntries**; a meal-plan entry belongs to exactly one recipe.
+
+### Database Access
+
+- Store the Neon connection string only in `DATABASE_URL` environment variables (`.env.local` for local development and Vercel project settings for deployments); never commit it to source control.
+- Store Clerk configuration only in Clerk environment variables (`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY`); never commit secrets to source control.
+- Store versioned SQL migration files for tables, relations, indexes, constraints, and schema changes.
+- Query Neon with parameterized SQL only in Server Components, Route Handlers, Server Actions, and server-only modules. Client Components must call server code rather than importing the database driver or credentials.
+- Use seeded development data and a non-production Neon branch/database for local testing.
+
+### Component Architecture
+
+The shared layout, ingredient, and recipe components are Week 04 implementation priorities. `StarRating` and `FeedbackItem` may be built as presentational, reusable components in Week 04, while persisted feedback workflows remain Phase 2. Components with user interaction (forms, badges, rating selection) are Client Components; layout and presentational components remain Server Components unless they require client behavior.
+
+```text
+src/components/
+├── layout/
+│   ├── Header.tsx
+│   ├── Footer.tsx
+│   └── NavLinks.tsx
+├── auth/
+│   └── LoginForm.tsx
+├── ingredients/
+│   ├── IngredientInput.tsx
+│   └── IngredientBadge.tsx
+├── recipes/
+│   ├── PreviewCard.tsx
+│   ├── DetailsCard.tsx
+│   └── RecipeList.tsx
+└── feedback/
+    ├── StarRating.tsx
+    └── FeedbackItem.tsx
+```
+
+Initial MVP routes: `/`, `/login`, `/recipes`, `/recipes/[id]`, `/dashboard`, and `/planner`. The shared `Header`, `Footer`, and `NavLinks` wrap applicable views. `RecipeList` renders `PreviewCard`; the recipe detail view composes `DetailsCard`, `StarRating`, and `FeedbackItem` when Phase 2 feedback is enabled.
+
+### Design System
+
+| Token | Value | Use |
+| --- | --- | --- |
+| Background | `#FAF9F6` Warm Alabaster | Main page surface |
+| Primary | `#2E6F40` Sage Basil Green | Primary actions and active states |
+| Secondary | `#E07A5F` Warm Terracotta | Match badges, accents, and star ratings |
+| Ink | `#1F2937` Charcoal Ink | Headings, body copy, icons, and footer contrast |
+| Display font | Plus Jakarta Sans | Logo, page headings, and recipe titles |
+| Body font | Inter | Body copy, forms, ingredients, and buttons |
+
+Use Tailwind CSS for responsive styling. Keep a consistent spacing scale (4, 8, 12, 16, 24, 32, 48 px), a centered content container, recipe/planner/feedback cards with rounded corners and subtle borders or shadows, and a one-column mobile layout that expands to multi-column grids on larger screens. Forms use visible labels and consistent validation, disabled, loading, and error states. Every interactive control has hover and visible keyboard-focus states.
+
+Sage Basil Green is the primary accessible action color. Warm Terracotta is reserved for decorative accents, badges, and star ratings: it must not be the sole indicator of state or be used as small text on the Alabaster background. Terracotta badges use Charcoal Ink text. Recipe imagery is bright, natural, food-focused, and displayed at consistent aspect ratios. Use one shared icon library, such as Lucide React, if icons are needed.
 
 ---
 
@@ -218,8 +281,9 @@ These are implementation constraints rather than additional MealPlanner function
 
 - Use Next.js with App Router.
 - Use TypeScript.
-- Use MongoDB as the application database.
-- Use Clerk or Auth.js for authentication.
+- Use Neon PostgreSQL as the application database, deployed with Vercel.
+- Use the Neon serverless driver and parameterized SQL for server-side database access.
+- Use Clerk for authentication, identity management, and protected routes.
 - Demonstrate appropriate Server Component and Client Component usage.
 - Demonstrate at least one complete Client → Route Handler → Database flow.
 - Implement complete CRUD behavior for at least two data models.
@@ -239,7 +303,7 @@ These are implementation constraints rather than additional MealPlanner function
 ### P0 - Foundation
 
 - Authentication.
-- MongoDB connection.
+- Neon PostgreSQL connection, versioned SQL migrations, and seeded development data.
 - Seeded recipe data.
 - Basic recipe catalog.
 - Protected application workspace.
