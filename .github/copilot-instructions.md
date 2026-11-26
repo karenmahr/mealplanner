@@ -19,7 +19,7 @@
 ## Authentication and authorization
 
 - Use Clerk for sign-up, sign-in, session management, identity, and protected routes. Do not add Auth.js or custom password/session handling.
-- Store an application profile in the local `Users` table with a unique `clerkUserId`; use the local user ID for foreign-key relationships.
+- Use the local `users` table as the ownership boundary for application data. Follow the approved database schema when mapping a Clerk identity to an application user.
 - Enforce ownership server-side for recipes, feedback, schedules, and meal-plan entries. Never rely on client-side checks for authorization.
 - Keep Clerk secrets in environment variables. Never expose `CLERK_SECRET_KEY` to client code or commit credentials.
 
@@ -30,7 +30,7 @@
 - Always use parameterized SQL; never concatenate user input into SQL strings.
 - Store SQL schema changes in ordered files under `db/migrations` and seeded development data under `db/seeds`.
 - `DATABASE_URL` belongs in `.env.local` locally and Vercel environment variables in deployments. Never commit secrets.
-- Preserve the agreed relational model: Users, Recipes, Ingredients, RecipeIngredients, ScheduleWeeks, MealPlanEntries, Feedback, and optional SavedRecipes.
+- Preserve the agreed relational model: `users`, `recipe`, `ingredient`, `ingredients`, `user_ingredients`, `feedback`, and `saved_recipes`.
 
 ## UI and accessibility
 

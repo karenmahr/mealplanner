@@ -187,24 +187,23 @@ If implemented:
 
 The application will use Neon PostgreSQL as its relational SQL database, deployed alongside the application on Vercel. Server-side application code will access the database with parameterized SQL through the Neon serverless driver; no ORM will be used.
 
-| Entity / table | Key fields |
-| --- | --- |
-| **Users** | `id`, `clerkUserId` (unique), `name`, `email` (unique), `createdAt` |
-| **Recipes** | `id`, `title`, `description`, `imageUrl`, `instructions`, `prepTimeMinutes`, `createdAt`, `userId` (nullable foreign key for seeded recipes) |
-| **Ingredients** | `id`, `name` (unique) |
-| **RecipeIngredients** | `recipeId` (foreign key), `ingredientId` (foreign key), `quantity`; composite primary key (`recipeId`, `ingredientId`) |
-| **Feedback** _(Phase 2)_ | `id`, `rating` (integer constrained to 1–5), `comment`, `userId` (foreign key), `recipeId` (foreign key), `createdAt`; unique (`userId`, `recipeId`) |
-| **ScheduleWeeks** | `id`, `userId` (foreign key), `weekStartDate`; unique (`userId`, `weekStartDate`) |
-| **MealPlanEntries** | `id`, `scheduleWeekId` (foreign key), `recipeId` (foreign key), `dayOfWeek`, `mealType`; unique (`scheduleWeekId`, `dayOfWeek`, `mealType`) |
-| **SavedRecipes** _(if implemented)_ | `userId` (foreign key), `recipeId` (foreign key); composite primary key (`userId`, `recipeId`) |
+| Entity / table                       | Key fields                                                                                                                                                                                           |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **users**                            | `id` (PK), `name`, `email` (unique, not null)                                                                                                                                                        |
+| **recipe**                           | `id` (PK), `title` (not null), `description`, `image_url`, `instructions` (not null), `prep_time_minutes` (integer >= 0), `created_at` (timestamptz), `user_id` (not null foreign key -> `users.id`) |
+| **ingredient**                       | `id` (PK), `name` (unique, not null)                                                                                                                                                                 |
+| **ingredients**                      | `recipe_id` (foreign key -> `recipe.id`), `ingredient_id` (foreign key -> `ingredient.id`), `quantity` (not null); composite primary key (`recipe_id`, `ingredient_id`)                              |
+| **user_ingredients**                 | `user_id` (foreign key -> `users.id`), `ingredient_id` (foreign key -> `ingredient.id`), `quantity` (nullable); composite primary key (`user_id`, `ingredient_id`)                                   |
+| **feedback** _(Phase 2)_             | `id` (PK), `rating` (smallint constrained to 1–5), `comment`, `user_id` (not null foreign key -> `users.id`), `recipe_id` (not null foreign key -> `recipe.id`)                                      |
+| **saved_recipes** _(if implemented)_ | `user_id` (foreign key -> `users.id`), `recipe_id` (foreign key -> `recipe.id`); composite primary key (`user_id`, `recipe_id`)                                                                      |
 
 **Relationships**
 
-- One **User** has many **Recipes**, **Feedback** records, and **ScheduleWeeks**.
-- One **Recipe** has many **Feedback** records and **MealPlanEntries**.
-- **Recipes** and **Ingredients** are many-to-many through **RecipeIngredients**.
-- **Users** and saved **Recipes** are many-to-many through **SavedRecipes**; recipe IDs are not stored as an array on the user record.
-- One **ScheduleWeek** has many **MealPlanEntries**; a meal-plan entry belongs to exactly one recipe.
+- One **User** has many **Recipes** and **Feedback** records.
+- One **Recipe** belongs to one **User** and has many **Feedback** records.
+- **Recipes** and **Ingredients** are many-to-many through **ingredients**.
+- **Users** and **Ingredients** are many-to-many through **user_ingredients**.
+- **Users** and saved **Recipes** are many-to-many through **saved_recipes**; recipe IDs are not stored as an array on the user record.
 
 ### Database Access
 
