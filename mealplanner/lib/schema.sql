@@ -1,0 +1,49 @@
+CREATE TABLE IF NOT EXISTS users (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(120) NOT NULL,
+  email VARCHAR(255) UNIQUE NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS recipe (
+  id SERIAL PRIMARY KEY,
+  title VARCHAR(200) NOT NULL,
+  description TEXT,
+  image_url TEXT,
+  instructions TEXT NOT NULL,
+  prep_time_minutes INTEGER CHECK (prep_time_minutes >= 0),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS ingredient (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(120) UNIQUE NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS ingredients (
+  recipe_id INTEGER NOT NULL REFERENCES recipe(id) ON DELETE CASCADE,
+  ingredient_id INTEGER NOT NULL REFERENCES ingredient(id) ON DELETE RESTRICT,
+  quantity VARCHAR(80) NOT NULL,
+  PRIMARY KEY (recipe_id, ingredient_id)
+);
+
+CREATE TABLE IF NOT EXISTS user_ingredients (
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  ingredient_id INTEGER NOT NULL REFERENCES ingredient(id) ON DELETE CASCADE,
+  quantity VARCHAR(80),
+  PRIMARY KEY (user_id, ingredient_id)
+);
+
+CREATE TABLE IF NOT EXISTS feedback (
+  id SERIAL PRIMARY KEY,
+  rating SMALLINT NOT NULL CHECK (rating BETWEEN 1 AND 5),
+  comment TEXT,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  recipe_id INTEGER NOT NULL REFERENCES recipe(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS saved_recipes (
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  recipe_id INTEGER NOT NULL REFERENCES recipe(id) ON DELETE CASCADE,
+  PRIMARY KEY (user_id, recipe_id)
+);
