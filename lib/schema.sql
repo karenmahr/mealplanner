@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS recipe (
   id SERIAL PRIMARY KEY,
   title VARCHAR(200) NOT NULL,
   description TEXT,
+  
   image_url TEXT,
   instructions TEXT NOT NULL,
   prep_time_minutes INTEGER CHECK (prep_time_minutes >= 0),
