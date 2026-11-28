@@ -47,6 +47,22 @@ CLERK_SECRET_KEY="your-clerk-secret-key"
 
 Never commit `.env.local` or database credentials.
 
+### Seed the database
+
+```bash
+npm run db:seed
+```
+
+This creates the tables from `lib/schema.sql` if they don't exist, then runs every file in `db/seeds` in order. It is safe to run more than once.
+
+### Recipe API
+
+`GET /api/recipes` returns the catalog as JSON: `{ "recipes": [...], "count": 6 }`.
+
+- `search`: matches recipe titles, for example `/api/recipes?search=rice`
+- `ingredients`: comma separated, and a recipe must contain all of them, for example `/api/recipes?ingredients=chicken,rice`
+- Invalid input returns 400, a search with no matches returns 200 with an empty list, and server errors return 500 with a safe message.
+
 ### Run the application
 
 ```bash
